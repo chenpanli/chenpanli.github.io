@@ -118,6 +118,8 @@ figcaption .fl { color: var(--fg); font-weight: 650; }
 .flags label { white-space: nowrap; }
 .flags select { appearance: none; -webkit-appearance: none; background: transparent; border: 0; border-bottom: 1px dotted var(--accent); border-radius: 0; color: var(--accent); font: inherit; padding: 0 1px; margin-left: 4px; cursor: pointer; }
 .flags select:hover { border-bottom-style: solid; }
+.flagbtn { background: transparent; border: 0; border-bottom: 1px dotted var(--accent); border-radius: 0; color: var(--accent); font: inherit; padding: 0 1px; margin-left: 4px; cursor: pointer; }
+.flagbtn:hover { border-bottom-style: solid; }
 .flags option { background: #FFFFFF; color: var(--fg); }
 .note { font-size: 13px; color: var(--muted); }
 .legend { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 13.5px; color: var(--muted); }
@@ -125,7 +127,6 @@ figcaption .fl { color: var(--fg); font-weight: 650; }
 .fighead .flags { margin: 0; }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 2px; }
 .sw-high { background: var(--red); } .sw-medium { background: var(--yellow); } .sw-low { background: var(--blue); }
-.sw-band { background: var(--wash-red); } .sw-other { background: var(--box); }
 
 /* fig 1: terminal */
 .term { font: 13.5px/1.75 var(--mono); }
@@ -204,9 +205,11 @@ figcaption .fl { color: var(--fg); font-weight: 650; }
 .plot .tk, .plot .al { fill: var(--muted); font: 12px var(--serif); font-variant-numeric: tabular-nums; }
 .plot .lab { fill: var(--fg); font: 12px var(--serif); }
 .plot .one { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 1 4; stroke-linecap: round; }
-.plot .band { fill: var(--red); stroke: none; opacity: 0.14; }
-.plot .other { fill: none; stroke: var(--box); stroke-width: 1.2; stroke-linejoin: round; }
-.plot .none { fill: var(--muted); font: italic 13px var(--serif); }
+#f1b-legend span { cursor: default; transition: opacity .2s; }
+#f1b-legend span.off { opacity: 0.35; }
+#dplot [data-m] { transition: opacity .2s; }
+#dplot .mline { fill: none; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+#dplot .err { stroke-width: 1; }
 .plot .zero { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .s-high { stroke: var(--red); } .s-medium { stroke: var(--yellow); } .s-low { stroke: var(--blue); }
 .p-high { fill: var(--red); } .p-medium { fill: var(--yellow); } .p-low { fill: var(--blue); }
@@ -379,10 +382,10 @@ body[data-focus="low"] [data-g]:not([data-g="low"]) { opacity: 0.16 !important; 
       <div class="inner">
         <figure style="margin:0 auto">
           <div class="frame" style="padding-bottom:18px" aria-label="Accuracy change against the number of tasks per composition, for tasks solved 3 of 3 times in isolation. Accuracy falls further as k grows.">
-            <div class="fighead"><div class="legend" aria-hidden="true"><span><i class="sw-high"></i>selected model</span><span><i class="sw-band"></i>95% interval</span><span><i class="sw-other"></i>other models</span></div><div class="flags"><label>dataset <select id="f1b-dataset" data-flag="dataset"></select></label><label>model <select id="f1b-model" data-flag="model"></select></label></div></div>
+            <div class="fighead"><div class="legend" id="f1b-legend" aria-hidden="true"></div><div class="flags"><label>dataset <select id="f1b-dataset" data-flag="dataset"></select></label><label>y-axis <button type="button" class="flagbtn" id="f1b-log" aria-pressed="false">linear</button></label></div></div>
             <div class="plot" id="dplot"><svg role="img" aria-label="Accuracy change against tasks per composition"></svg><div class="tip" hidden></div></div>
           </div>
-          <figcaption><span class="fl">Figure 1b.</span> Accuracy change of tasks solved 3 of 3 times in isolation, against the number of tasks per composition. Grey lines are the other models; the shading is a 95% bootstrap interval. At k = 1, a second isolated pass shows how much selection noise alone explains.</figcaption>
+          <figcaption><span class="fl">Figure 1b.</span> Accuracy change of tasks solved 3 of 3 times in isolation, against the number of tasks per composition. Bars are 95% bootstrap intervals; hover a model to pick it out. At k = 1, a second isolated pass shows how much selection noise alone explains.</figcaption>
         </figure>
       </div>
     </details>
@@ -831,61 +834,84 @@ function sup(v) { return `<tspan dy="-5" font-size="9">${v}</tspan>`; }
   new ResizeObserver(() => render()).observe(box);
 })();
 
-/* ---------- fig 1b (inside details): accuracy drop against k ---------- */
+/* ---------- fig 1b (inside details): accuracy drop against k, every model ---------- */
 (function fig1b() {
   const det = $("#evidence1"), box = $("#dplot"), svg = $("svg", box), tip = $(".tip", box);
-  const selD = $("#f1b-dataset"), selM = $("#f1b-model");
-  fillSelect(selD, DATASETS, "mmlu"); fillSelect(selM, MODELS, "qwen3-4b-thinking");
-  const NAME = Object.fromEntries(MODELS);
-  let P = 1, p0 = 0, pts = [];
+  const selD = $("#f1b-dataset"), leg = $("#f1b-legend"), logBtn = $("#f1b-log");
+  fillSelect(selD, DATASETS, "mmlu");
+  // the paper's model order and colours (all-datasets-composed-sets-drop.pdf)
+  const PAL = [["r1-qwen-distill-7b", "#7A1F2B"], ["r1-llama-distill-8b", "#C8403F"], ["r1-qwen3-8b", "#E6B33D"],
+    ["qwen3-4b-thinking", "#8FA9C9"], ["qwen3-8b", "#6FB3D9"], ["qwen3-14b", "#2F6FB0"], ["qwen3-8-27b", "#1B2F5E"]];
+  const NAME = Object.fromEntries(MODELS), COL = Object.fromEntries(PAL);
+  leg.innerHTML = PAL.map(([m, c]) => `<span data-m="${m}"><i style="background:${c}"></i>${NAME[m]}</span>`).join("");
+  let P = 1, p0 = 0, pts = [], focus = null, LOG = false;
+  // symmetric log: sign(v) log10(1 + |v|), linear near 0 so the small positive k = 1 values stay drawable
+  const T = v => LOG ? Math.sign(v) * Math.log10(1 + Math.abs(v)) : v;
+  const LOG_TICKS = [-100, -50, -20, -10, -5, -2, -1, 0, 1, 2, 5, 10, 20];
+  function paint() {
+    svg.querySelectorAll("[data-m]").forEach(el => { el.style.opacity = !focus || el.dataset.m === focus ? "" : 0.12; });
+  }
   function render() {
     if (p0) { P = lin(performance.now() - p0, 0, 400 / SPEED); if (P >= 1) p0 = 0; }
     const W = box.clientWidth; if (!W) return;
-    const all = D.fig1b[selD.value], e = all[selM.value];
+    const all = D.fig1b[selD.value], lines = Object.values(all);
+    leg.querySelectorAll("span").forEach(el => {
+      const off = !all[el.dataset.m];
+      el.classList.toggle("off", off); el.title = off ? "no composed runs on this dataset" : "";
+    });
     const H = Math.round(clamp(W * 0.58, 240, 340)), M = { l: 46, r: 12, t: 10, b: 40 };
-    const lines = Object.values(all), kmax = Math.max(...lines.flatMap(l => l.k));
-    const lo = Math.min(0, ...lines.flatMap(l => l.y), ...(e ? e.lo : [])), hi = Math.max(0, ...lines.flatMap(l => l.y), ...(e ? e.hi : []));
-    // a sliver above zero (the k = 1 noise) stays inside the padding instead of adding a gridline
-    const st = nice((hi - lo) / 4 || 1), y0 = Math.floor(lo / st) * st, y1 = Math.max(0, Math.ceil(hi / st - 0.15) * st), pad = st * 0.15;
+    const kmax = Math.max(...lines.flatMap(l => l.k));
+    const lo = Math.min(0, ...lines.flatMap(l => l.lo)), hi = Math.max(0, ...lines.flatMap(l => l.hi));
+    const lab = (v, d) => Math.abs(v) < 1e-9 ? "0" : (v > 0 ? "+" : "−") + Math.abs(v).toFixed(d);
+    let y0, y1, pad, yt = [];
+    if (LOG) {
+      y0 = Math.max(...LOG_TICKS.filter(v => v <= lo)); y1 = Math.min(...LOG_TICKS.filter(v => v >= hi - 0.5));
+      pad = 0.06 * (T(y1) - T(y0));
+      yt = LOG_TICKS.filter(v => v >= y0 && v <= y1).map(v => [v, lab(v, 0)]);
+    } else {
+      // a sliver above zero (the k = 1 noise) stays inside the padding instead of adding a gridline
+      const st = nice((hi - lo) / 4 || 1);
+      y0 = Math.floor(lo / st) * st; y1 = Math.max(0, Math.ceil(hi / st - 0.15) * st); pad = st * 0.15;
+      for (let v = y0; v <= y1 + 1e-9; v += st) yt.push([v, lab(v, st < 1 ? 1 : 0)]);
+    }
     const lx0 = Math.log(0.9), lx1 = Math.log(kmax * 1.1);
     const X = k => M.l + (Math.log(k) - lx0) / (lx1 - lx0) * (W - M.l - M.r);
-    const Y = v => M.t + (y1 + pad - v) / (y1 - y0 + 2 * pad) * (H - M.t - M.b);
+    const Y = v => M.t + (T(y1) + pad - T(v)) / (T(y1) - T(y0) + 2 * pad) * (H - M.t - M.b);
     const xt = [1, 3, 6, 10, 20].filter(k => k <= kmax).map(k => [k, k]);
-    const yt = [];
-    for (let v = y0; v <= y1 + 1e-9; v += st) yt.push([v, Math.abs(v) < 1e-9 ? "0" : (v > 0 ? "+" : "−") + Math.abs(v).toFixed(st < 1 ? 1 : 0)]);
-    let s = axes({ W, H, M, xt, yt, X, Y, xl: "tasks per composition, k", yl: "accuracy change (pp)" });
+    let s = axes({ W, H, M, xt, yt, X, Y, xl: "tasks per composition, k", yl: LOG ? "accuracy change (pp, symlog)" : "accuracy change (pp)" });
     s += `<line class="zero" x1="${M.l}" x2="${W - M.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>`;
     pts = [];
-    for (const [m, l] of Object.entries(all)) {
-      if (m === selM.value) continue;
-      s += `<polyline class="other" points="${l.k.map((k, i) => `${X(k).toFixed(1)},${Y(l.y[i]).toFixed(1)}`).join(" ")}"/>`;
-      l.k.forEach((k, i) => pts.push({ x: X(k), y: Y(l.y[i]), m, k, dy: l.y[i] }));
-    }
-    if (e) {
+    for (const [m, c] of PAL) {
+      const e = all[m]; if (!e) continue;
       const vis = e.k.map(k => clamp((P * 1.2 - (Math.log(k) - lx0) / (lx1 - lx0)) / 0.2));
       const idx = e.k.map((_, i) => i).filter(i => vis[i] > 0);
-      if (idx.length > 1) {
-        const up = idx.map(i => `${X(e.k[i]).toFixed(1)},${Y(e.hi[i]).toFixed(1)}`), dn = idx.map(i => `${X(e.k[i]).toFixed(1)},${Y(e.lo[i]).toFixed(1)}`).reverse();
-        s += `<polygon class="band" points="${up.concat(dn).join(" ")}"/>`;
-        s += `<polyline class="path s-high" points="${idx.map(i => `${X(e.k[i]).toFixed(1)},${Y(e.y[i]).toFixed(1)}`).join(" ")}"/>`;
-      }
+      let g = "";
+      if (idx.length > 1) g += `<polyline class="mline" stroke="${c}" points="${idx.map(i => `${X(e.k[i]).toFixed(1)},${Y(e.y[i]).toFixed(1)}`).join(" ")}"/>`;
       for (const i of idx) {
-        const x = X(e.k[i]), y = Y(e.y[i]);
-        pts.push({ x, y, m: selM.value, k: e.k[i], dy: e.y[i], lo: e.lo[i], hi: e.hi[i] });
-        s += `<circle class="pt p-high" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.6" opacity="${vis[i].toFixed(2)}"/>`;
+        const x = X(e.k[i]).toFixed(1), y = Y(e.y[i]);
+        g += `<line class="err" stroke="${c}" x1="${x}" x2="${x}" y1="${Y(e.lo[i]).toFixed(1)}" y2="${Y(e.hi[i]).toFixed(1)}" opacity="${vis[i].toFixed(2)}"/>`;
+        g += `<circle class="pt" fill="${c}" cx="${x}" cy="${y.toFixed(1)}" r="3.2" opacity="${vis[i].toFixed(2)}"/>`;
+        pts.push({ x: +x, y, m, k: e.k[i], dy: e.y[i], lo: e.lo[i], hi: e.hi[i] });
       }
-    } else {
-      s += `<text class="none" x="${M.l + 12}" y="${H - M.b - 12}">no composed runs for this model and dataset</text>`;
+      s += `<g data-m="${m}">${g}</g>`;
     }
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
-    svg.innerHTML = s;
+    svg.innerHTML = s; paint();
     if (p0) requestAnimationFrame(render);
   }
   const pp = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1);
   const change = () => { tip.hidden = true; if (REDUCE) { P = 1; render(); return; } P = 0; p0 = performance.now(); requestAnimationFrame(render); };
-  selD.addEventListener("change", change); selM.addEventListener("change", change);
+  selD.addEventListener("change", change);
+  logBtn.addEventListener("click", () => {
+    LOG = !LOG; logBtn.textContent = LOG ? "log" : "linear"; logBtn.setAttribute("aria-pressed", LOG); change();
+  });
   det.addEventListener("toggle", () => { if (det.open) change(); });
-  hoverTip(box, svg, tip, () => pts, p => `${NAME[p.m]} · k = ${p.k} · ${pp(p.dy)} pp` + (p.lo !== undefined ? ` <span style="color:var(--muted)">(${pp(p.lo)} to ${pp(p.hi)})</span>` : ""));
+  leg.querySelectorAll("span").forEach(el => {
+    el.addEventListener("mouseenter", () => { focus = el.dataset.m; paint(); });
+    el.addEventListener("mouseleave", () => { focus = null; paint(); });
+  });
+  hoverTip(box, svg, tip, () => focus ? pts.filter(p => p.m === focus) : pts,
+    p => `<b style="color:${COL[p.m]}">●</b> ${NAME[p.m]} · k = ${p.k} · ${pp(p.dy)} pp <span style="color:var(--muted)">(${pp(p.lo)} to ${pp(p.hi)})</span>`);
   new ResizeObserver(() => render()).observe(box);
 })();
 
