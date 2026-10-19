@@ -54,6 +54,15 @@ term 1 ✓   term 2 ✓   term 3 ✗
 
 *Figure 1.* Each integral is solved in 3 of 3 attempts in isolation, but composing them (i.e. summing them) causes failures.
 
+::: details "Empirical evidence: accuracy drop vs composition size"
+
+[[Figure 1b: accuracy change against k, with dataset and model selectors; the selected model in red with its interval, the other models in grey]]
+legend: selected model · 95% interval · other models
+
+*Figure 1b.* Accuracy change of tasks solved 3 of 3 times in isolation, against the number of tasks per composition. Grey lines are the other models; the shading is a 95% bootstrap interval. At k = 1, a second isolated pass shows how much selection noise alone explains.
+
+:::
+
 **If a model can solve every constituent task alone, why does it fail a composition of them, and what mechanism drives it?**
 
 In recent years, LLMs have gained immense abilities through stepwise thinking, which heavily influences task success. Hence, a composition of tasks might alter how a model thinks about each problem in detail, leading to degraded abilities. We argue that this is the case and propose the following hypothesis:

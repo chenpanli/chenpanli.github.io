@@ -1,7 +1,9 @@
-"""Export the data behind fig. 2 and fig. 3b to data/figures.json.
+"""Export the data behind fig. 1b, fig. 2 and fig. 3b to data/figures.json.
 
 Reads the CSVs that the paper's analyses write under $RUN_DIR/results:
 
+    I-success-conditioned-drop/all-datasets-composed-sets-drop.csv
+                                            accuracy drop and its 95% interval per dataset, model and k
     II-token-ratio/token-ratio-points.csv   mean token ratio per dataset, model, bin and k
     II-token-ratio/power-law-fits.csv       the paper's overall fit (m, R^2) per dataset and model
     III-budget-forcing/composed-bins.csv    token reduction and accuracy change per bin and k
@@ -21,6 +23,9 @@ import pathlib
 RESULTS = pathlib.Path(os.environ["RUN_DIR"]) / "results"
 OUT = pathlib.Path(__file__).parent / "data" / "figures.json"
 BINS = {"High": "high", "Med.": "medium", "Low": "low"}
+PAGE_DATASETS = {"integrals", "mmlu", "onewordqa", "gpqa-diamond", "gsm8k", "math500"}
+PAGE_MODELS = {"qwen3-4b-thinking", "qwen3-8b", "qwen3-14b", "qwen3-8-27b",
+               "r1-qwen-distill-7b", "r1-llama-distill-8b", "r1-qwen3-8b"}
 
 
 def origin_slope(points):
@@ -32,6 +37,20 @@ def origin_slope(points):
 def rows(path):
     with open(RESULTS / path) as f:
         return list(csv.DictReader(f))
+
+
+def success_drop():
+    # stored as accuracy change (the negative drop), so it reads like fig. 3b
+    out = {}
+    for r in sorted(rows("I-success-conditioned-drop/all-datasets-composed-sets-drop.csv"), key=lambda r: int(r["k"])):
+        if r["dataset"] not in PAGE_DATASETS or r["model"] not in PAGE_MODELS:
+            continue
+        g = out.setdefault(r["dataset"], {}).setdefault(r["model"], {"k": [], "y": [], "lo": [], "hi": []})
+        g["k"].append(int(r["k"]))
+        g["y"].append(round(-float(r["drop_pp"]), 2))
+        g["lo"].append(round(-float(r["hi_pp"]), 2))
+        g["hi"].append(round(-float(r["lo_pp"]), 2))
+    return out
 
 
 def token_ratio():
@@ -64,5 +83,5 @@ def accuracy_drop():
 
 if __name__ == "__main__":
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(json.dumps({"fig2": token_ratio(), "fig5": accuracy_drop()}, separators=(",", ":")))
+    OUT.write_text(json.dumps({"fig1b": success_drop(), "fig2": token_ratio(), "fig5": accuracy_drop()}, separators=(",", ":")))
     print("wrote", OUT)

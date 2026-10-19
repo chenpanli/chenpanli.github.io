@@ -12,7 +12,7 @@ To change only the text, edit `draft.md` and ask Claude to apply it (see `CLAUDE
 python3 build.py
 ```
 
-`data/figures.json` holds the numbers behind fig. 2 and fig. 3b. To regenerate it from the paper's results:
+`data/figures.json` holds the numbers behind fig. 1b, fig. 2 and fig. 3b. To regenerate it from the paper's results:
 
 ```bash
 RUN_DIR=/path/to/runs python3 export_data.py
