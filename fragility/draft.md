@@ -23,7 +23,7 @@ Conventions
 Chenpan Li\*, Thies Brockmoeller,
 Stefanie Jegelka, Sharut Gupta◇, Nikolaos Karalias◇
 
-[TUM logo] [MIT logo] · [Paper] (first-page preview) · [Code] (GitHub preview, github.com/chenpanli/fragility)
+[TUM logo] [MIT logo] · [Paper] (first-page preview, arxiv.org/abs/2610.27190) · [Code] (GitHub preview, github.com/chenpanli/fragility)
 
 [[Main figure: paper Figure 1, no caption]]
 
