@@ -385,7 +385,7 @@ body[data-focus="low"] [data-g]:not([data-g="low"]) { opacity: 0.16 !important; 
             <div class="fighead"><div class="legend" id="f1b-legend" aria-hidden="true"></div><div class="flags"><label>dataset <select id="f1b-dataset" data-flag="dataset"></select></label><label>y-axis <button type="button" class="flagbtn" id="f1b-log" aria-pressed="false">linear</button></label></div></div>
             <div class="plot" id="dplot"><svg role="img" aria-label="Accuracy change against tasks per composition"></svg><div class="tip" hidden></div></div>
           </div>
-          <figcaption><span class="fl">Figure 1b.</span> Accuracy change of tasks solved 3 of 3 times in isolation, against the number of tasks per composition. Bars are 95% bootstrap intervals; hover a model to pick it out. At k = 1, a second isolated pass shows how much selection noise alone explains.</figcaption>
+          <figcaption><span class="fl">Figure 1b.</span> Accuracy change of tasks solved 3 of 3 times in isolation, against the number of tasks per composition. Bars are 95% bootstrap intervals; hover a model to pick it out. At k = 1, a second isolated pass shows how much selection noise alone explains. On OneWordQA, R1 Qwen3 8B's drop comes from its answer format: under composition it often writes the item number right before its answer (<code>1.4</code> instead of <code>1. 4</code>), and such answers count as wrong.</figcaption>
         </figure>
       </div>
     </details>

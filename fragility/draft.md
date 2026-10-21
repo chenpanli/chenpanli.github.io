@@ -59,7 +59,7 @@ term 1 ✓   term 2 ✓   term 3 ✗
 [[Figure 1b: accuracy change against k for every model at once, in the paper's model colours, with a dataset selector; hovering a model in the legend picks it out; a y-axis button switches between linear and symmetric log]]
 legend: R1 Qwen 7B · R1 Llama 8B · R1 Qwen3 8B · Qwen3 4B Thinking · Qwen3 8B · Qwen3 14B · Qwen3.8 27B (faded where the model has no runs)
 
-*Figure 1b.* Accuracy change of tasks solved 3 of 3 times in isolation, against the number of tasks per composition. Bars are 95% bootstrap intervals; hover a model to pick it out. At k = 1, a second isolated pass shows how much selection noise alone explains.
+*Figure 1b.* Accuracy change of tasks solved 3 of 3 times in isolation, against the number of tasks per composition. Bars are 95% bootstrap intervals; hover a model to pick it out. At k = 1, a second isolated pass shows how much selection noise alone explains. On OneWordQA, R1 Qwen3 8B's drop comes from its answer format: under composition it often writes the item number right before its answer (`1.4` instead of `1. 4`), and such answers count as wrong.
 
 :::
 
