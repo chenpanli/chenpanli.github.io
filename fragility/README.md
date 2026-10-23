@@ -2,7 +2,7 @@
 
 Project page for *On the Fragility of Tasks under Composition: Implicit Budgeting in Language Models*, served at https://chenpanli.github.io/fragility/.
 
-`index.html` is the page, with the figure data inlined. GitHub Pages copies it unchanged, because it has no Jekyll front matter. The trace viewer in section 2 loads its traces on demand from `data/traces/<dataset>/<model>.json`.
+`index.html` is the page, with the figure data inlined. GitHub Pages copies it unchanged, because it has no Jekyll front matter. The trace viewer in section 2 loads its traces on demand from `data/traces/<dataset>/<model>.json`. Clicking the teaser figure opens `assets/figure1_animation.gif` in a viewer, which loads the GIF on first open.
 
 ## Edit
 

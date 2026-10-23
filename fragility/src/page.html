@@ -58,6 +58,12 @@ h1 { font-size: 28px; line-height: 1.25; font-weight: 500; letter-spacing: -0.00
 .mk-y { background: var(--wash-yellow); } .mk-b { background: var(--wash-blue); } .mk-r { background: var(--wash-red); }
 .teaser { margin: 22px auto 0; }
 .teaser img { display: block; width: 100%; height: auto; }
+.teaser a { display: block; cursor: zoom-in; }
+/* clicking the teaser plays the animated figure over the blurred, dimmed page */
+.viewer { border: 0; padding: 0; margin: auto; background: #FFFFFF; border-radius: 8px; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35); max-width: 92vw; max-height: 88vh; overflow: hidden; cursor: zoom-out; }
+.viewer img { display: block; width: min(1200px, 92vw, calc(88vh * 16 / 9)); height: auto; }
+.viewer::backdrop { background: rgba(20, 20, 20, 0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); cursor: zoom-out; }
+html:has(.viewer[open]) { overflow: hidden; }
 .rule { height: 1px; background: var(--faint); margin: calc(var(--lh) * 2.2) 0 0; }
 .rule + section { margin-top: calc(var(--lh) * 2.2); }
 
@@ -347,8 +353,9 @@ body[data-focus="low"] [data-g]:not([data-g="low"]) { opacity: 0.16 !important; 
     </nav>
   </header>
   <figure class="teaser" id="fig0">
-    <img src="assets/paper-figure1.png" alt="Three tasks solved alone each get more reasoning than they need. Composed into one prompt, every task's reasoning shrinks by the same factor; tasks 1 and 3 still clear their requirement, while task 2, which needs long reasoning, falls below it and fails." width="1500" height="707">
+    <a href="assets/figure1_animation.gif" id="zoom" aria-label="Play the animated figure"><img src="assets/paper-figure1.png" alt="Three tasks solved alone each get more reasoning than they need. Composed into one prompt, every task's reasoning shrinks by the same factor; tasks 1 and 3 still clear their requirement, while task 2, which needs long reasoning, falls below it and fails." width="1500" height="707"></a>
   </figure>
+  <dialog class="viewer" id="viewer" aria-label="Animated figure"><img alt="Animation of the figure above: as the three tasks are composed into one prompt, every task's reasoning shrinks, and task 2 falls below what it needs and fails." width="1200" height="675"></dialog>
   <p class="tldr"><span class="tl">TL;DR:</span> When prompts are composed of many tasks, language models systematically <mark class="mk-y">reduce their reasoning effort across tasks according to a power law</mark>, causing <mark class="mk-r">failures</mark> on those that require more effort. By adjusting task grouping based on <b>task fragility</b>, we can <mark class="mk-b">save 43% of tokens without degrading accuracy</mark>.</p>
   <div class="rule" aria-hidden="true"></div>
 
@@ -1274,6 +1281,16 @@ document.querySelectorAll(".sn").forEach(n => {
     if (on && !started) { started = true; busy = busy.then(() => show(false)); }
   });
 })();
+
+// the teaser opens its animated version; the GIF loads on first open, any click or Esc closes it
+const zoom = $("#zoom"), viewer = $("#viewer");
+zoom.addEventListener("click", e => {
+  e.preventDefault();
+  const img = $("img", viewer);
+  if (!img.src) img.src = zoom.href;
+  viewer.showModal();
+});
+viewer.addEventListener("click", () => viewer.close());
 
 // section rail
 const railNav = $(".rail"), rail = [...document.querySelectorAll(".rail a")], secs = rail.map(a => document.getElementById(a.dataset.s));
